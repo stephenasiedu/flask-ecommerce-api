@@ -1,0 +1,74 @@
+name: Flask CI/CD
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11.9
+        
+      - name: Create Virtual Environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate && pip install -U pip && pip install -r requirements.txt
+      
+      - name: Check if requirements.txt exists
+        run: |
+          if [ ! -f requirements.txt ]; then
+            echo "Error: 'requirements.txt' is missing. Please add it to the repository."
+            exit 1
+          fi
+
+      - name: Print debugging information
+        run: |
+          echo "Python Version: $(python --version)"
+          echo "Working Directory: $(pwd)"
+          echo "Contents of Working Directory: $(ls -l)"
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11.9
+        
+      - name: Create Virtual Environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate && pip install -U pip && pip install -r requirements.txt
+
+      - name: Run the tests
+        run: |
+          python -m unittest discover -s tests -p "test_*.py"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && success()
+    steps:
+        - name: Check if deployment URL is available
+          run: |
+            if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+              echo "Error: The deployment URL is missing. Please set 'RENDER_DEPLOY_HOOK_URL' in GitHub secrets."
+              exit 1
+            fi
+
+        - name: Deploy the App
+          env:
+            deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          run: |
+            curl "$deploy_url"

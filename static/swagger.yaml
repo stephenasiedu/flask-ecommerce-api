@@ -1,0 +1,273 @@
+swagger: '2.0'
+info:
+  title: "E-commerce API"
+  description: |
+    A user-friendly platform where customers can effortlessly browse products, add them to their shopping carts, and place orders. Simultaneously, administrators have tools to manage product inventory, track orders, and ensure a seamless shopping experience.
+  version: "1.0.0"
+host: "127.0.0.1:5000"  # Working on localhost
+schemes:
+  - "http"
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+securityDefinitions:
+  bearerAuth:
+    type: apiKey
+    name: Authorization
+    in: header
+
+paths:
+  /customers/login:
+    post:
+      tags:
+        - Customers
+      summary: "Login Endpoint (generates token)"
+      description: "Endpoint for user authentication and token generation."
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Credentials for login"
+          required: true
+          schema:
+            $ref: "#/definitions/LoginPayload"
+      responses:
+        200:
+          description: "Login Successful"
+          schema:
+            $ref: "#/definitions/LoginResponse"
+          examples:
+            application/json:
+              auth_token: "kusdt3498uhfd943...."
+              message: "Successfully logged in"
+              status: "Success"
+        401:
+          description: "Invalid credentials"
+          examples:
+            application/json:
+              message: "Invalid credentials"
+              status: "Fail"
+
+  /customers:
+    get:
+      tags:
+        - Customers
+      summary: "Returns all customers"
+      description: "Returns all customers' information (requires token)"
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: "Retrieve customers successfully"
+          schema:
+            $ref: "#/definitions/AllCustomers"
+        401:
+          description: "Unauthorized access"
+          examples:
+            application/json:
+              message: "Token authorization required"
+              status: "Fail"
+
+  /customers/{customer_id}:
+    get:
+      tags:
+        - Customers
+      summary: "Returns a specific customer"
+      description: "Returns a customer's information based on customer ID (requires token)"
+      parameters:
+        - name: "customer_id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID of the customer"
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: "Retrieve customer successfully"
+          schema:
+            $ref: "#/definitions/Customer"
+        404:
+          description: "Customer not found"
+          examples:
+            application/json:
+              message: "Customer not found"
+              status: "Fail"
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: "Returns all products"
+      description: "Returns all products' information"
+      responses:
+        200:
+          description: "Retrieve products successfully"
+          schema:
+            $ref: "#/definitions/AllProducts"
+  
+  /products/{product_id}:
+    get:
+      tags:
+        - Products
+      summary: "Returns a specific product"
+      description: "Returns product information based on product ID"
+      parameters:
+        - name: "product_id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID of the product"
+      responses:
+        200:
+          description: "Retrieve product successfully"
+          schema:
+            $ref: "#/definitions/Product"
+        404:
+          description: "Product not found"
+          examples:
+            application/json:
+              message: "Product not found"
+              status: "Fail"
+
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: "Create a new order"
+      description: "Create a new order (requires token)"
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Order data"
+          required: true
+          schema:
+            $ref: "#/definitions/OrderPayload"
+      responses:
+        201:
+          description: "Order successfully created"
+          schema:
+            $ref: "#/definitions/OrderResponse"
+        400:
+          description: "Bad request"
+          examples:
+            application/json:
+              message: "Invalid order data"
+              status: "Fail"
+
+definitions:
+  LoginPayload:
+    type: "object"
+    properties:
+      username:
+        type: "string"
+        description: "Customer's username"
+      password:
+        type: "string"
+        description: "Customer's password"
+    required:
+      - "username"
+      - "password"
+
+  LoginResponse:
+    type: "object"
+    properties:
+      auth_token:
+        type: "string"
+        description: "Authorization token"
+      message:
+        type: "string"
+        description: "Successfully logged in"
+      status:
+        type: "string"
+        description: "Success or Failure"
+
+  Customer:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        description: "Customer's ID"
+      name:
+        type: "string"
+        description: "Customer's name"
+      email:
+        type: "string"
+        description: "Customer's email"
+      phone:
+        type: "string"
+        description: "Customer's phone number"
+      username:
+        type: "string"
+        description: "Customer's username"
+      role_id:
+        type: "integer"
+        description: "Customer's role ID"
+
+  AllCustomers:
+    type: "array"
+    items:
+      $ref: "#/definitions/Customer"
+
+  Product:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        description: "Product's ID"
+      name:
+        type: "string"
+        description: "Product's name"
+      price:
+        type: "number"
+        description: "Product's price"
+      description:
+        type: "string"
+        description: "Product's description"
+
+  AllProducts:
+    type: "array"
+    items:
+      $ref: "#/definitions/Product"
+
+  OrderPayload:
+    type: "object"
+    properties:
+      customer_id:
+        type: "integer"
+        description: "ID of the customer placing the order"
+      product_ids:
+        type: "array"
+        items:
+          type: "integer"
+        description: "List of product IDs being ordered"
+      quantity:
+        type: "integer"
+        description: "Quantity of the products being ordered"
+    required:
+      - "customer_id"
+      - "product_ids"
+      - "quantity"
+
+  OrderResponse:
+    type: "object"
+    properties:
+      order_id:
+        type: "integer"
+        description: "ID of the created order"
+      customer_id:
+        type: "integer"
+        description: "Customer ID associated with the order"
+      product_ids:
+        type: "array"
+        items:
+          type: "integer"
+        description: "List of product IDs in the order"
+      quantity:
+        type: "integer"
+        description: "Quantity of the product(s) in the order"
+      status:
+        type: "string"
+        description: "Order creation status"
